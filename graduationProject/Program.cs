@@ -102,6 +102,7 @@ builder.Services.AddScoped<IOfferService, OfferService>();
 builder.Services.AddScoped<IuserService, userService>();
 builder.Services.AddScoped<IConnectionService, ConnectionService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddTransient<IFileHandling, FileHandling>();
 builder.Services.AddSignalR();
 

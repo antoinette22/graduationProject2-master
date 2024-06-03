@@ -14,10 +14,12 @@ namespace graduationProject.Controllers
     public class PostsController : ControllerBase
     {
         private readonly IPostService _postService;
+        private readonly IuserService _userService;
 
-        public PostsController(IPostService postService)
+        public PostsController(IPostService postService, IuserService userService)
         {
             _postService = postService;
+            _userService = userService;
         }
 
         [Authorize(Roles = "User")]
@@ -219,6 +221,17 @@ namespace graduationProject.Controllers
             var viewrUsername = User.FindFirstValue(ClaimTypes.Name);
 
             var result = await _postService.GetPostReacts(id,viewrUsername);
+            return Ok(result);
+        }
+        [HttpGet("serch users")]
+        public async Task<IActionResult> SearchUserProfile([FromQuery] string firstName, [FromQuery] string lastName)
+        {
+            if (string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName))
+            {
+                return BadRequest(new { message = "At least one search parameter (first name or last name) is required." });
+            }
+
+            var result = await _userService.SearchUserProfile(firstName, lastName);
             return Ok(result);
         }
     }

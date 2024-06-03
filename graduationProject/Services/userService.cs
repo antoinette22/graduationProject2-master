@@ -360,24 +360,39 @@ namespace graduationProject.Services
                 Message = "Offer accepted successfully"
             };
         }
-            public async Task<searchDto> SearchUserProfile(string userName)
+         
+            
+            public async Task<List<searchDto>> SearchUserProfile(string firstName, string lastName)
             {
-                var user = await _userManager.Users.FirstOrDefaultAsync(a => a.UserName.Contains(userName.Trim()));
-                if (user != null)
-                {
-                    return new searchDto
+                var query = _userManager.Users.AsQueryable();
 
-                    {
-                        userName = user.UserName,
-                    };
+                if (!string.IsNullOrWhiteSpace(firstName))
+                {
+                    query = query.Where(a => a.FirstName.Contains(firstName.Trim()));
                 }
-                else return new searchDto
 
+                if (!string.IsNullOrWhiteSpace(lastName))
                 {
-                    userName = null,
-                };
+                    query = query.Where(a => a.LastName.Contains(lastName.Trim()));
+                }
 
+                var users = await query.ToListAsync();
+
+                if (users.Any())
+                {
+                    return users.Select(user => new searchDto
+                    {
+                        UserName = user.UserName,
+                        FirstName = user.FirstName,
+                        LastName = user.LastName,
+                        id = user.Id
+                    }).ToList();
+                }
+                else
+                {
+                    return new List<searchDto>();
+                }
             }
-        }
+    }
 }
 

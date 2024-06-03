@@ -20,13 +20,15 @@ namespace graduationProject.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private List<string> _allowedExtensions = new List<string> { ".jpg", ".png" };
         private long maxAllowedSize = 1048576;
+        private readonly ICloudinaryService _cloudinaryService;
         private readonly string _uploadsPath;
 
-        public PostService(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IWebHostEnvironment env)
+        public PostService(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IWebHostEnvironment env, ICloudinaryService cloudinaryService)
         {
             _context = context;
             _userManager = userManager;
             _uploadsPath = Path.Combine(env.WebRootPath, "uploads");
+            _cloudinaryService = cloudinaryService;
         }
 
         public async Task<ReturnPostDto> CreatePost(AddPostDto postDto, string username)
@@ -58,38 +60,25 @@ namespace graduationProject.Services
                 User = user,
                 CreatedAt = DateTime.UtcNow,
                 Category = category,
-                ConnectionsOnly= postDto.ConnectionsOnly
             };
 
             if (postDto.Attachments != null && postDto.Attachments.Any())
             {
                 foreach (var attachment in postDto.Attachments)
                 {
-                    var extension = Path.GetExtension(attachment.FileName);
-                    if (!_allowedExtensions.Contains(extension))
+                    var uploadResult = await _cloudinaryService.UploadImageAsync(attachment);
+
+                    if (uploadResult.Error != null)
                     {
                         return new ReturnPostDto
                         {
                             IsSuccess = false,
-                            Errors = new string[] { "Invalid file type" }
+                            Errors = new string[] { uploadResult.Error.Message }
                         };
                     }
-                    if (attachment.Length > maxAllowedSize)
-                    {
-                        return new ReturnPostDto
-                        {
-                            IsSuccess = false,
-                            Errors = new string[] { "File size is too large" }
-                        };
-                    }
-                    var fileName = Guid.NewGuid().ToString() + extension;
-                    var filePath = Path.Combine(_uploadsPath, fileName);
-                    using (var fileStream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await attachment.CopyToAsync(fileStream);
-                    }
+
                     post.Attachments ??= new List<Attachment>();
-                    post.Attachments.Add(new Attachment { FilePath = fileName });
+                    post.Attachments.Add(new Attachment { FilePath = uploadResult.Url.ToString() });
                 }
             }
 
@@ -105,7 +94,7 @@ namespace graduationProject.Services
                 CreatedAt = post.CreatedAt,
                 CategoryId = post.Category.Id,
                 Attachments = post.Attachments != null
-                    ? post.Attachments.Select(a => Path.Combine(_uploadsPath, a.FilePath)).ToList()
+                    ? post.Attachments.Select(a => a.FilePath).ToList()
                     : new List<string>()
             };
 
@@ -385,25 +374,31 @@ namespace graduationProject.Services
                 .Include(p => p.Attachments)
                 .Include(p => p.Category)
                 .Include(p => p.User)
-                .ThenInclude(c=>c.Connections)
+                .ThenInclude(c => c.Connections)
                 .ToListAsync();
-            var returnedposts = new List<Post>();
+
+            var returnedPosts = new List<Post>();
+
             foreach (var post in posts)
             {
                 if (post.ConnectionsOnly)
                 {
                     var postOwner = post.User;
                     var viewer = await _userManager.FindByNameAsync(viewerUsername);
+
                     bool isConnected = postOwner.Connections.Any(c => (c.Receiver == viewer || c.Sender == viewer)) || postOwner == viewer;
+
                     if (isConnected)
                     {
-                        returnedposts.Add(post);
+                        returnedPosts.Add(post);
                     }
                     continue;
                 }
-                returnedposts.Add(post);
+
+                returnedPosts.Add(post);
             }
-            var returnPosts = returnedposts.Select(post => new ReturnPostDto
+
+            var returnPosts = returnedPosts.Select(post => new ReturnPostDto
             {
                 Id = post.Id,
                 Content = post.Content,
@@ -411,10 +406,8 @@ namespace graduationProject.Services
                 IsSuccess = true,
                 CreatedAt = post.CreatedAt,
                 CategoryId = post.Category.Id,
-                Reacts = post.Reacts != null ? post.Reacts.Count() : 0,
-                Attachments = post.Attachments != null
-                    ? post.Attachments.Select(a => Path.Combine(_uploadsPath, a.FilePath)).ToList()
-                    : new List<string>()
+                Reacts = post.Reacts?.Count() ?? 0,
+                Attachments = post.Attachments?.Select(a => a.FilePath).ToList() ?? new List<string>()
             }).ToList();
 
             var returnPostsDto = new ReturnPostsDto
@@ -425,6 +418,7 @@ namespace graduationProject.Services
 
             return returnPostsDto;
         }
+
 
 
         public async Task<ReturnCommentDto> addComment(AddCommentDto comment, string username)

@@ -114,15 +114,7 @@ namespace graduationProject.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        //[Authorize]
-        [HttpGet("serch users")]
 
-        public async Task<IActionResult> SearchUsers(string userName)
-
-        {
-            var result = await _userService.SearchUserProfile(userName);
-            return Ok(result);
-        }
         [Authorize(Roles ="User")]
         [HttpGet("GetOffers")]
 

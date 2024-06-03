@@ -1,7 +1,6 @@
-﻿using graduationProject.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace graduationProject.DTOs.OfferDtos
+namespace graduationProject.Models
 {
     public class offer
     {
