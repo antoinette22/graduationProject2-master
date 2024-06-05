@@ -1,7 +1,7 @@
 ﻿using graduationProject.DTOs;
+using graduationProject.Models;
 using graduationProject.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,13 +9,13 @@ namespace graduationProject.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles ="Admin")]
+    [Authorize(Roles = "Admin")]
     public class RolesController : ControllerBase
     {
         private readonly IRoleService _roleService;
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public RolesController(IRoleService roleService, UserManager<IdentityUser> userManager)
+        public RolesController(IRoleService roleService, UserManager<ApplicationUser> userManager)
         {
             _roleService = roleService;
             _userManager = userManager;
@@ -43,29 +43,12 @@ namespace graduationProject.Controllers
                 return BadRequest(result.ErrorMessage);
             return Ok(result);
         }
+
         [HttpGet("[action]")]
         public async Task<IActionResult> ViewUsers()
         {
             var result = await _roleService.ViewUsers();
             return Ok(result);
         }
-
-        //[HttpGet("UsersView")]
-        //public async Task<IActionResult> GetUsersRoles()
-        //{
-
-        //    var users = await _userManager.Users.Select(user => new UserViewDto
-        //    {
-        //        Id = user.Id,
-        //        FirstName = user.FirstName,
-        //        LastName = user.LastName,
-        //        UserName = user.UserName,
-        //        Email = user.Email,
-        //        Roles = _userManager.GetRolesAsync(user).Result
-        //    }).ToListAsync();
-
-        //    return Ok(users);
-        //}
-
     }
 }

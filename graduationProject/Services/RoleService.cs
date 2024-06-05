@@ -2,7 +2,6 @@
 using graduationProject.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Principal;
 
 namespace graduationProject.Services
 {
@@ -10,6 +9,7 @@ namespace graduationProject.Services
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+
         public RoleService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
@@ -88,6 +88,5 @@ namespace graduationProject.Services
 
             return userViewModels;
         }
-
     }
 }
